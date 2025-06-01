@@ -3,7 +3,7 @@ import requests
 import math
 import google.generativeai as genai
 
-st.set_page_config("What2Wear AI", page_icon="👕", layout="centered", initial_sidebar_state="expanded")
+st.set_page_config("What2Wear AI", page_icon="👕", layout="wide", initial_sidebar_state="expanded")
 
 # HEADER
 st.title("👕 What2Wear AI")
@@ -24,7 +24,10 @@ if st.sidebar.button("📍 Detect My Location"):
 st.session_state["city"] = st.sidebar.text_input("Or enter your city manually", value=st.session_state["city"])
 st.sidebar.subheader("🔐 API Keys")
 weather_api_key = st.sidebar.text_input("🌦️ OpenWeather API Key", type="password")
-gemini_api_key = st.sidebar.text_input("🔑 Google Gemini API Key", type="password")
+gemini_api_key = st.sidebar.text_input("🧠 Google Gemini API Key", type="password")
+with st.sidebar.expander("🔑 Grab API keys below:"):
+    st.markdown("- [🌦️ OpenWeather API](https://openweathermap.org/api)")
+    st.markdown("- [🧠 Google Gemini API](https://ai.google.dev/gemini-api/docs)")
 
 # LOCATION
 city = st.session_state.get("city")
@@ -44,6 +47,7 @@ def get_weather(city, api_key):
             return res.json()
     except Exception as e:
         st.error("Failed to fetch weather. Check your internet connection.")
+        print(e)
     return None
 
 weather = ""
@@ -74,19 +78,17 @@ if city and weather_api_key:
             y = int((1.0 - math.log(math.tan(lat) + 1 / math.cos(lat)) / math.pi) / 2.0 * (2 ** z))
             map_url = f"https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid={weather_api_key}"
             st.image(map_url, use_container_width=True)
-    else:
-        st.warning("Failed to fetch weather. Check your API key.")
 elif city:
     st.info("Please enter your OpenWeather API Key to continue.")
 
-# AI
+# GOOGLE GEMINI
 if weather and gemini_api_key:
     genai.configure(api_key=gemini_api_key)
     st.divider()
     st.header("🧥 Clothing Recommendation")
     clothing_options = ["T-shirt", "Sweater", "Jacket", "Coat", "Shorts", "Jeans", "Raincoat", "Hat", "Scarf", "Gloves", "Sunglasses", "Sandals", "Sneakers", "Boots"]
     selected_clothing = st.multiselect("🧍 What are YOU thinking of wearing?", clothing_options)
-    if st.button("🤖 Ask Personal AI"):
+    if st.button("🤖 Ask Google Gemini"):
         try:
             model = genai.GenerativeModel("gemini-2.0-flash-lite")
             prompt = f"""
@@ -96,6 +98,7 @@ You are a weather-aware fashion assistant. Given the current weather and the use
 2. 🧍 User's Selected Outfit
 3. 🧠 Gemini's Verdict
 4. 👕 Gemini's Suggested Outfit
+5. ☂️ Umbrella Check
 
 Weather:
 - City: {city}
@@ -107,13 +110,16 @@ Weather:
 
 User's Outfit: {', '.join(selected_clothing) if selected_clothing else 'No outfit selected'}
 
+☂️ Umbrella Check: Suggest carrying an umbrella if weather conditions include rain, drizzle, or thunderstorms.
+
 Answer like a personal professional butler.
             """
             with st.spinner("🧠 Gemini is evaluating your outfit..."):
                 response = model.generate_content(prompt)
                 st.info(response.text.strip())
         except Exception as e:
-            st.error(f"Gemini API Error: {e}")
+            st.error(f"Failed to fetch Gemini Result. Check your internet connection.")
+            print(e)
 elif weather:
     st.info("Please enter your Google Gemini API Key to continue.")
 
