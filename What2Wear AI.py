@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import math
+from datetime import datetime
 import google.generativeai as genai
 
 st.set_page_config("What2Wear AI", page_icon="👕", layout="wide", initial_sidebar_state="expanded")
@@ -58,18 +59,37 @@ if city and weather_api_key:
         st.header(f"🏙️ Weather in {city}")
         col1, col2 = st.columns([1, 1])
         with col1:
-            st.metric("🌡️ Temperature", f"{weather['main']['temp']}°C", border=True)
             col3, col4 = st.columns([1, 1])
             with col3:
                 weather_icon={"Thunderstorm":"⛈️", "Drizzle":"🌦️", "Rain":"🌧️", "Snow":"🌨️", "Clear":"☀️", "Clouds":"🌥️"}
                 st.metric(f"{weather['weather'][0]['description'].title()}", f"{weather_icon.get(weather['weather'][0]['main'], "🌫️")}", border=True)
             with col4:
-                st.metric("☁️ Cloud Cover", f"{weather['clouds']['all']}%", border=True)
-            col5, col6= st.columns([1, 1])
-            with col5:
+                st.metric("🌡️ Temperature", f"{weather['main']['temp']}°C", border=True)
+            col3, col4, col5 = st.columns([1, 1, 1])
+            with col3:
                 st.metric("💧 Humidity", f"{weather['main']['humidity']}%", border=True)
+            with col4:
+                st.metric("☁️ Cloudiness", f"{weather['clouds']['all']}%", border=True)
+            with col5:
+                st.metric("☔ Rain", f"{weather.get('rain',{}).get('1h',0)} mm", border=True)
+                
+            col6, col7= st.columns([1, 1])
             with col6:
-                st.metric("🍃 Wind Speed", f"{weather['wind']['speed']}m/s", border=True)
+                st.metric("💨 Air Pressure", f"{weather['main']['pressure']} hPa", border=True)
+            with col7:
+                st.metric("🌫️ Visibility", f"{weather.get('visibility', 10000) / 1000} km", border=True)
+            col8, col9, col10 = st.columns([1, 1, 1])
+            with col8:
+                st.metric("🍃 Wind Speed", f"{weather['wind']['speed']} m/s", border=True)
+            with col9:
+                st.metric("🎐 Wind Gust", f"{weather['wind'].get('gust', 0)} m/s", border=True)
+            with col10:
+                st.metric("🧭 Wind Direction", f"{weather['wind']['deg']}°", border=True)
+            col11, col12= st.columns([1, 1])
+            with col11:
+                st.metric("🌄 Sunrise", f"{datetime.fromtimestamp(weather['sys']['sunrise']).strftime("%I:%M %p")}", border=True)
+            with col12:
+                st.metric("🌅 Sunset", f"{datetime.fromtimestamp(weather['sys']['sunset']).strftime("%I:%M %p")}", border=True)
         with col2:
             lon = weather['coord']['lon']
             lat = math.radians(weather['coord']['lat'])
@@ -86,8 +106,8 @@ if weather and gemini_api_key:
     genai.configure(api_key=gemini_api_key)
     st.divider()
     st.header("🧥 Clothing Recommendation")
-    clothing_options = ["T-shirt", "Sweater", "Jacket", "Coat", "Shorts", "Jeans", "Raincoat", "Hat", "Scarf", "Gloves", "Sunglasses", "Sandals", "Sneakers", "Boots"]
-    selected_clothing = st.multiselect("🧍 What are YOU thinking of wearing?", clothing_options)
+    clothing_options = ["Shirt", "T-shirt", "Sweater", "Jacket", "Coat", "Shorts", "Jeans", "Raincoat", "Hat", "Scarf", "Gloves", "Sunglasses", "Sandals", "Sneakers", "Boots"]
+    selected_clothing = st.multiselect("🧍 What are you thinking of wearing?", clothing_options)
     if st.button("🤖 Ask Google Gemini"):
         try:
             model = genai.GenerativeModel("gemini-2.0-flash-lite")
